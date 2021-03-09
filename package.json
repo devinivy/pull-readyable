@@ -1,6 +1,6 @@
 {
   "name": "pull-readyable",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "dependencies and completion using pull-streams",
   "main": "lib/index.js",
   "scripts": {
