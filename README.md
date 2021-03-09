@@ -19,6 +19,7 @@ However, it comes with some additional bells and whistles to help you manage dep
 ```js
 'use strict'
 
+const fs = require('fs')
 const { createReadyable, during, run } = require('pull-readyable')
 
 // Create a db object with a lifecycle based on readyables
@@ -34,7 +35,7 @@ const db = {
         db.fd = fd
         cb()
       })
-    }).run()
+    }).go()
   }
 }
 
@@ -58,28 +59,40 @@ run(db.lifecycle.start, (err) => {
 
 ## API
 ### `createReadyable()`
-Returns a readyable, which is a readable pull stream which will produce no values, and eventually either completes or errors.  A readyable may be pulled multiple times: its result is cached, and if it is pulled after it has already ended, it will immediately complete or error again.  A readyable has dependencies, which are pull-streams, and handlers, which are callbacks.  When you call `readyable.run()` the readyable will start processing.  First its dependencies will complete, then its handlers will run in parallel, and finally the readyable will end.
+Returns a readyable, which is a readable pull stream which will produce no values, and eventually either completes or errors.  A readyable may be pulled multiple times: its result is cached, and if it is pulled after it has already ended, it will immediately complete or error again.  A readyable has dependencies, which are pull-streams, and handlers, which are callbacks.  When you call `readyable.go()` the readyable will start processing.  First its dependencies will complete, then its handlers will run in parallel, and finally the readyable will end.
 
 #### `readyable.dependOn(stream)`
-Sets `stream` as a dependency of `readyable`: it will not run its handlers or complete until `stream` ends.  If `stream` errors, that error will be propagated to `readyable`.  The `stream` will not be pulled until `readyable.run()` has started the readyable.  Returns `readyable`.
+> also `dependOn(readyable, stream)`
+
+Sets `stream` as a dependency of `readyable`: it will not run its handlers or complete until `stream` ends.  If `stream` errors, that error will be propagated to `readyable`.  The `stream` will not be pulled until `readyable.go()` has started the readyable.  You may also pass an array of streams and they will be combined using `all()`.  Returns `readyable`.
 
 #### `readyable.handle(cb)`
-Sets callback `cb` as a handler of `readyable`: it will not complete until `cb` is called, which can only occur after `readyable.run()` has started the readyable.  The `cb` callback may be called with an error, which will be propagated to `readyable`.  Returns `readyable`.
+> also `handle(readyable, cb)`
 
-#### `readyable.run()`
-Indicates that all dependencies and handlers have been added using `readyable.dependOn()` and `readyable.handle()`: these methods will fail if they are called after `readyable.run()`.  Once `readyable.run()` is called, dependencies will be pulled in parallel.  Once the dependencies complete, the handlers will be run in parallel, and then the readyable will complete.  May only be called once.  Returns `readyable`.
+Sets callback `cb` as a handler of `readyable`: it will not complete until `cb` is called, which can only occur after `readyable.go()` has started the readyable.  The `cb` callback may be called with an error, which will be propagated to `readyable`.  Returns `readyable`.
+
+#### `readyable.go()`
+> also `go(readyable)`
+
+Indicates that all dependencies and handlers have been added using `readyable.dependOn()` and `readyable.handle()`: these methods will fail if they are called after `readyable.go()`.  Once `readyable.go()` is called, dependencies will be pulled in parallel.  Once the dependencies complete, the handlers will be run in parallel, and then the readyable will complete.  May only be called once.  Returns `readyable`.
 
 #### `readyable.isReady()`
+> also `isReady(readyable)`
+
 Returns `true` if the readyable has completed, i.e. "is ready."  Returns `false` if the readyable has not yet completed, and returns `null` if the readyable has errored.
 
 #### `readyable.during([{ dependOn }])`
-Returns a new readyable that is automatically run when `readyable.run()` is called.  When `dependOn` is `true`, which is the default, this new readyable is also marked as a dependency of `readyable`.
+> also `during(readyable, [{ dependOn }])`
 
-### `cacheResult(stream)`
+Returns a new readyable that is automatically run when `readyable.go()` is called.  When `dependOn` is `true`, which is the default, this new readyable is also marked as a dependency of `readyable`.
+
+### `readyableish(stream)`
+> alias `cacheResult(stream)`
+
 Returns a pull-stream based on `stream` with the basic properties of a readyable: a. it will produce no values and either completes or errors, and b. it may be pulled multiple times and its completion is cached.
 
 ### `all(streams)`
-Returns a pull-stream combining all each stream in the array of `streams`.  It is built using [pull-many](https://github.com/pull-stream/pull-many), and once pulled the streams run in parallel.
+Returns a pull-stream combining each stream in the array of `streams`.  It is built using [pull-many](https://github.com/pull-stream/pull-many), and once pulled the streams run in parallel.  You may also pass a single stream.
 
 ### `run(stream, cb)`
 Runs the pull-stream `stream` until it ends, then calls `cb`.  It's really just short for `pull(stream, pull.onEnd(cb))`.
