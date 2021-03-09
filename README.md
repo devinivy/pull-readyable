@@ -9,7 +9,7 @@ npm install pull-readyable
 ```
 
 ## Usage
-At its simplest, a readyable is a readable pull-streams with two properties:
+At its simplest, a readyable is a readable pull-stream with two properties:
  - it produces no values, and eventually either completes or errors.
  - it may be pulled multiple times, and its completion is cached for future consumers.
 
